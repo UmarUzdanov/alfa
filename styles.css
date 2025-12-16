@@ -404,3 +404,170 @@ body {
 .photo-container img[data-loading="false"] {
     opacity: 1;
 }
+
+/* ============================================
+   Preloader
+   ============================================ */
+.preloader {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: #0a0a0a;
+    z-index: 9999;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: opacity 0.6s ease, visibility 0.6s ease;
+}
+
+.preloader.hidden {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+}
+
+.preloader-content {
+    text-align: center;
+}
+
+.preloader-logo {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(2rem, 8vw, 4rem);
+    font-weight: 300;
+    letter-spacing: 0.1em;
+    color: #fff;
+    margin-bottom: 2rem;
+}
+
+.preloader-bar {
+    width: 200px;
+    height: 2px;
+    background: #222;
+    margin: 0 auto 1rem;
+    overflow: hidden;
+}
+
+.preloader-progress {
+    width: 0%;
+    height: 100%;
+    background: linear-gradient(90deg, #8b0000, #cc0000);
+    transition: width 0.3s ease;
+}
+
+.preloader-text {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.7rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: #444;
+}
+
+/* ============================================
+   Image Loading Skeleton
+   ============================================ */
+.photo-container {
+    background: linear-gradient(135deg, #111 0%, #1a1a1a 100%);
+}
+
+.photo-container.loading::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.03), transparent);
+    animation: shimmer 1.5s infinite;
+    z-index: 1;
+}
+
+@keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+/* Image error state */
+.photo-container img.error {
+    opacity: 0.3;
+    filter: grayscale(1);
+}
+
+/* ============================================
+   Mobile Touch Optimization
+   ============================================ */
+@media (pointer: coarse) {
+    .filmstrip-container {
+        touch-action: pan-x pan-y;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .photo-container {
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    .photo-container:active {
+        transform: scale(0.98);
+        transition: transform 0.1s ease;
+    }
+}
+
+/* Swipe hint for mobile */
+.swipe-hint {
+    position: fixed;
+    bottom: 20%;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: 'Inter', sans-serif;
+    font-size: 0.65rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: #444;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+    pointer-events: none;
+    z-index: 100;
+}
+
+.swipe-hint.visible {
+    opacity: 1;
+}
+
+/* ============================================
+   Hero Visual Enhancement
+   ============================================ */
+.hero {
+    background: radial-gradient(ellipse at 50% 30%, rgba(139, 0, 0, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 80%, rgba(139, 0, 0, 0.05) 0%, transparent 40%),
+                #0a0a0a;
+}
+
+.hero::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.015'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+/* ============================================
+   Footer Enhancement
+   ============================================ */
+.footer-sub {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.7rem;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: #444;
+    margin-top: 0.5rem;
+}
+
+.footer-copy {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.6rem;
+    letter-spacing: 0.1em;
+    color: #333;
+    margin-top: 2rem;
+}

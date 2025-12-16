@@ -71,7 +71,7 @@ function initGallery() {
         // Create image elements
         session.images.forEach(imageName => {
             const photoContainer = document.createElement('div');
-            photoContainer.className = 'photo-container';
+            photoContainer.className = 'photo-container loading';
 
             const img = document.createElement('img');
             img.src = `public/${imageName}.jpeg`;
@@ -82,12 +82,93 @@ function initGallery() {
             // Handle image load
             img.onload = () => {
                 img.setAttribute('data-loading', 'false');
+                photoContainer.classList.remove('loading');
+            };
+
+            // Handle image error
+            img.onerror = () => {
+                img.classList.add('error');
+                photoContainer.classList.remove('loading');
+                img.setAttribute('data-loading', 'false');
             };
 
             photoContainer.appendChild(img);
             filmstrip.appendChild(photoContainer);
         });
     });
+}
+
+// ============================================
+// Preloader with Font Loading
+// ============================================
+function initPreloader() {
+    const preloader = document.querySelector('.preloader');
+    const progressBar = document.querySelector('.preloader-progress');
+
+    if (!preloader) return Promise.resolve();
+
+    let progress = 0;
+    const updateProgress = (value) => {
+        progress = Math.min(value, 100);
+        if (progressBar) progressBar.style.width = progress + '%';
+    };
+
+    // Simulate initial progress
+    updateProgress(10);
+
+    return new Promise((resolve) => {
+        // Wait for fonts
+        if (document.fonts && document.fonts.ready) {
+            document.fonts.ready.then(() => {
+                updateProgress(50);
+
+                // Wait a bit for first images to start loading
+                setTimeout(() => {
+                    updateProgress(80);
+                    setTimeout(() => {
+                        updateProgress(100);
+                        setTimeout(() => {
+                            preloader.classList.add('hidden');
+                            resolve();
+                        }, 300);
+                    }, 200);
+                }, 500);
+            });
+        } else {
+            // Fallback for browsers without font loading API
+            setTimeout(() => {
+                updateProgress(100);
+                preloader.classList.add('hidden');
+                resolve();
+            }, 1500);
+        }
+    });
+}
+
+// ============================================
+// Mobile Detection and Swipe Hint
+// ============================================
+function initMobileHint() {
+    const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+
+    if (isTouchDevice) {
+        const hint = document.createElement('div');
+        hint.className = 'swipe-hint';
+        document.body.appendChild(hint);
+
+        // Show hint when entering first gallery section
+        ScrollTrigger.create({
+            trigger: ".gallery-section",
+            start: "top 90%",
+            onEnter: () => {
+                hint.classList.add('visible');
+                setTimeout(() => {
+                    hint.classList.remove('visible');
+                }, 3000);
+            },
+            once: true
+        });
+    }
 }
 
 // ============================================
@@ -303,9 +384,12 @@ function initAnimations() {
 document.addEventListener('DOMContentLoaded', () => {
     initGallery();
 
-    // Small delay to ensure images are in DOM before calculating scroll distances
-    requestAnimationFrame(() => {
-        initAnimations();
+    // Wait for preloader, then init animations
+    initPreloader().then(() => {
+        requestAnimationFrame(() => {
+            initAnimations();
+            initMobileHint();
+        });
     });
 });
 
