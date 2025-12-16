@@ -2,7 +2,6 @@
   "name": "alfa",
   "compatibility_date": "2025-12-16",
   "assets": {
-    "directory": "./",
-    "exclude": [".git", ".idea", ".wrangler", ".claude", "node_modules", "*.md", "*.json", "*.jsonc", "index.js"]
+    "directory": "./dist"
   }
 }
