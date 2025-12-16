@@ -1,9 +1,9 @@
 /* ============================================
-   GIULIA / Alfa Romeo - Horizontal Filmstrip Gallery
-   GSAP + ScrollTrigger Version
+   GIULIA / Alfa Romeo - Creative Scroll Gallery
+   5 Different Animation Styles
    ============================================ */
 
-// Session data configuration (excluding "(1)" duplicates)
+// Session data
 const sessions = [
     {
         name: "mountain-light",
@@ -58,73 +58,302 @@ const sessions = [
 ];
 
 // ============================================
-// Layout Patterns for Visual Variety
+// Create Image Element Helper
 // ============================================
-const layoutPatterns = [
-    // Pattern 1: Hero + small cluster
-    ['featured offset-center', 'size-small offset-up', 'size-small offset-down overlap', 'size-medium offset-center', 'size-large offset-up tilt-right'],
-    // Pattern 2: Staggered medium
-    ['size-medium offset-up', 'size-large offset-down', 'size-small offset-up overlap', 'size-medium offset-center tilt-left', 'size-medium offset-down'],
-    // Pattern 3: Large focus
-    ['size-small offset-down', 'featured offset-center', 'size-small offset-up overlap', 'size-medium offset-down tilt-right', 'size-large offset-center'],
-    // Pattern 4: Rhythmic
-    ['size-medium offset-up tilt-left', 'size-small offset-down', 'size-large offset-center', 'size-small offset-up overlap', 'size-medium offset-down tilt-right'],
-    // Pattern 5: Cascade
-    ['size-large offset-up', 'size-medium offset-center overlap', 'size-small offset-down', 'featured offset-center', 'size-medium offset-up tilt-left']
-];
+function createImageElement(imageName, title) {
+    const photoContainer = document.createElement('div');
+    photoContainer.className = 'photo-container loading';
+
+    const img = document.createElement('img');
+    img.src = `public/${imageName}.jpeg`;
+    img.alt = `Alfa Romeo Giulia - ${title}`;
+    img.loading = 'lazy';
+
+    img.onload = () => photoContainer.classList.remove('loading');
+    img.onerror = () => {
+        img.classList.add('error');
+        photoContainer.classList.remove('loading');
+    };
+
+    photoContainer.appendChild(img);
+    return photoContainer;
+}
 
 // ============================================
-// Initialize Gallery - Create Images Dynamically
+// Style 1: Stacking Cards
 // ============================================
-function initGallery() {
-    sessions.forEach((session, sessionIndex) => {
-        const section = document.querySelector(`[data-session="${session.name}"]`);
-        if (!section) return;
+function initStackStyle(section, session) {
+    const container = section.querySelector('.gallery-container');
+    const limitedImages = session.images.slice(0, 10); // Limit for performance
 
-        const filmstrip = section.querySelector('.filmstrip');
-        if (!filmstrip) return;
+    limitedImages.forEach((imageName, i) => {
+        const photo = createImageElement(imageName, session.title);
+        photo.style.zIndex = limitedImages.length - i;
+        container.appendChild(photo);
+    });
 
-        // Get pattern for this session
-        const pattern = layoutPatterns[sessionIndex % layoutPatterns.length];
+    const photos = container.querySelectorAll('.photo-container');
+    const totalPhotos = photos.length;
 
-        // Create image elements with varied layouts
-        session.images.forEach((imageName, imageIndex) => {
-            const photoContainer = document.createElement('div');
+    ScrollTrigger.create({
+        trigger: section,
+        start: "top top",
+        end: `+=${totalPhotos * 100}vh`,
+        pin: true,
+        scrub: 1,
+        onUpdate: (self) => {
+            const progress = self.progress;
+            const currentIndex = Math.floor(progress * totalPhotos);
 
-            // Apply layout class from pattern (cycle through pattern)
-            const layoutClass = pattern[imageIndex % pattern.length];
-            photoContainer.className = `photo-container loading ${layoutClass}`;
+            photos.forEach((photo, i) => {
+                const photoProgress = (progress * totalPhotos) - i;
 
-            // Add stagger delay for animation
-            photoContainer.style.transitionDelay = `${(imageIndex % 5) * 0.1}s`;
+                if (photoProgress < 0) {
+                    // Not yet visible
+                    gsap.set(photo, {
+                        y: 100,
+                        scale: 0.8,
+                        rotateX: 15,
+                        opacity: 0
+                    });
+                } else if (photoProgress < 1) {
+                    // Animating in
+                    gsap.set(photo, {
+                        y: 100 * (1 - photoProgress),
+                        scale: 0.8 + (0.2 * photoProgress),
+                        rotateX: 15 * (1 - photoProgress),
+                        opacity: photoProgress
+                    });
+                } else {
+                    // Stacked
+                    const stackOffset = Math.min(photoProgress - 1, 0.5);
+                    gsap.set(photo, {
+                        y: -stackOffset * 20,
+                        scale: 1 - (stackOffset * 0.05),
+                        rotateX: 0,
+                        opacity: 1 - (stackOffset * 0.3)
+                    });
+                }
+            });
+        }
+    });
+}
 
-            const img = document.createElement('img');
-            img.src = `public/${imageName}.jpeg`;
-            img.alt = `Alfa Romeo Giulia - ${session.title}`;
-            img.loading = 'lazy';
-            img.setAttribute('data-loading', 'true');
+// ============================================
+// Style 2: Masonry Grid with Reveals
+// ============================================
+function initMasonryStyle(section, session) {
+    const container = section.querySelector('.gallery-container');
 
-            // Handle image load
-            img.onload = () => {
-                img.setAttribute('data-loading', 'false');
-                photoContainer.classList.remove('loading');
-            };
+    session.images.forEach((imageName, i) => {
+        const photo = createImageElement(imageName, session.title);
+        photo.style.transitionDelay = `${(i % 6) * 0.1}s`;
+        container.appendChild(photo);
+    });
 
-            // Handle image error
-            img.onerror = () => {
-                img.classList.add('error');
-                photoContainer.classList.remove('loading');
-                img.setAttribute('data-loading', 'false');
-            };
+    const photos = container.querySelectorAll('.photo-container');
 
-            photoContainer.appendChild(img);
-            filmstrip.appendChild(photoContainer);
+    photos.forEach((photo, i) => {
+        ScrollTrigger.create({
+            trigger: photo,
+            start: "top 85%",
+            onEnter: () => photo.classList.add('visible'),
+            once: true
         });
     });
 }
 
 // ============================================
-// Preloader with Font Loading
+// Style 3: Cinematic Wipe Reveal
+// ============================================
+function initWipeStyle(section, session) {
+    const container = section.querySelector('.gallery-container');
+    const counter = container.querySelector('.photo-counter');
+    const currentSpan = counter?.querySelector('.current');
+    const totalSpan = counter?.querySelector('.total');
+
+    session.images.forEach((imageName, i) => {
+        const photo = createImageElement(imageName, session.title);
+        photo.style.zIndex = session.images.length - i;
+        container.appendChild(photo);
+    });
+
+    const photos = container.querySelectorAll('.photo-container');
+    const totalPhotos = photos.length;
+
+    if (totalSpan) totalSpan.textContent = totalPhotos;
+
+    ScrollTrigger.create({
+        trigger: section,
+        start: "top top",
+        end: `+=${totalPhotos * 80}vh`,
+        pin: true,
+        scrub: 0.5,
+        onUpdate: (self) => {
+            const progress = self.progress;
+            const currentIndex = Math.min(Math.floor(progress * totalPhotos), totalPhotos - 1);
+
+            if (currentSpan) currentSpan.textContent = currentIndex + 1;
+
+            photos.forEach((photo, i) => {
+                const photoProgress = (progress * totalPhotos) - i;
+                const clipValue = Math.max(0, Math.min(100, 100 - (photoProgress * 100)));
+                photo.style.clipPath = `inset(0 ${clipValue}% 0 0)`;
+            });
+        }
+    });
+}
+
+// ============================================
+// Style 4: Scattered Editorial
+// ============================================
+function initScatterStyle(section, session) {
+    const container = section.querySelector('.gallery-container');
+
+    session.images.forEach((imageName, i) => {
+        const photo = createImageElement(imageName, session.title);
+        container.appendChild(photo);
+    });
+
+    const photos = container.querySelectorAll('.photo-container');
+
+    photos.forEach((photo, i) => {
+        // Parallax effect
+        gsap.to(photo, {
+            y: -50 - (i % 3) * 30,
+            ease: "none",
+            scrollTrigger: {
+                trigger: photo,
+                start: "top bottom",
+                end: "bottom top",
+                scrub: 1.5
+            }
+        });
+
+        // Reveal on scroll
+        ScrollTrigger.create({
+            trigger: photo,
+            start: "top 80%",
+            onEnter: () => photo.classList.add('visible'),
+            once: true
+        });
+    });
+}
+
+// ============================================
+// Style 5: Zoom Parallax
+// ============================================
+function initZoomStyle(section, session) {
+    const container = section.querySelector('.gallery-container');
+    const limitedImages = session.images.slice(0, 12);
+
+    // Create grid positions for zoom effect
+    const positions = [
+        { x: '0%', y: '0%', w: '45vw', h: '60vh' },
+        { x: '50%', y: '10%', w: '35vw', h: '45vh' },
+        { x: '10%', y: '55%', w: '30vw', h: '40vh' },
+        { x: '55%', y: '50%', w: '40vw', h: '50vh' },
+        { x: '5%', y: '5%', w: '50vw', h: '70vh' },
+        { x: '45%', y: '25%', w: '45vw', h: '55vh' },
+        { x: '15%', y: '40%', w: '35vw', h: '45vh' },
+        { x: '60%', y: '5%', w: '30vw', h: '40vh' },
+        { x: '0%', y: '20%', w: '55vw', h: '65vh' },
+        { x: '40%', y: '40%', w: '50vw', h: '55vh' },
+        { x: '20%', y: '0%', w: '40vw', h: '50vh' },
+        { x: '50%', y: '35%', w: '45vw', h: '60vh' }
+    ];
+
+    limitedImages.forEach((imageName, i) => {
+        const photo = createImageElement(imageName, session.title);
+        const pos = positions[i % positions.length];
+
+        photo.style.left = pos.x;
+        photo.style.top = pos.y;
+        photo.style.width = pos.w;
+        photo.style.height = pos.h;
+
+        container.appendChild(photo);
+    });
+
+    const photos = container.querySelectorAll('.photo-container');
+    const totalPhotos = photos.length;
+
+    ScrollTrigger.create({
+        trigger: section,
+        start: "top top",
+        end: `+=${totalPhotos * 120}vh`,
+        pin: true,
+        scrub: 1,
+        onUpdate: (self) => {
+            const progress = self.progress;
+
+            photos.forEach((photo, i) => {
+                const photoProgress = (progress * totalPhotos) - i;
+                const img = photo.querySelector('img');
+
+                if (photoProgress < 0) {
+                    photo.classList.remove('active');
+                    gsap.set(photo, { scale: 0.5, opacity: 0 });
+                } else if (photoProgress < 1) {
+                    photo.classList.add('active');
+                    const scale = 0.5 + (photoProgress * 0.5);
+                    gsap.set(photo, { scale, opacity: photoProgress });
+                    if (img) gsap.set(img, { scale: 1.2 - (photoProgress * 0.2) });
+                } else if (photoProgress < 2) {
+                    photo.classList.add('active');
+                    gsap.set(photo, { scale: 1, opacity: 1 });
+                    if (img) gsap.set(img, { scale: 1 });
+                } else {
+                    const fadeOut = Math.min((photoProgress - 2) * 0.5, 1);
+                    gsap.set(photo, { scale: 1 + fadeOut * 0.5, opacity: 1 - fadeOut });
+                }
+            });
+        }
+    });
+}
+
+// ============================================
+// Initialize All Galleries
+// ============================================
+function initGalleries() {
+    sessions.forEach(session => {
+        const section = document.querySelector(`[data-session="${session.name}"]`);
+        if (!section) return;
+
+        const style = section.dataset.style;
+
+        switch (style) {
+            case 'stack':
+                initStackStyle(section, session);
+                break;
+            case 'masonry':
+                initMasonryStyle(section, session);
+                break;
+            case 'wipe':
+                initWipeStyle(section, session);
+                break;
+            case 'scatter':
+                initScatterStyle(section, session);
+                break;
+            case 'zoom':
+                initZoomStyle(section, session);
+                break;
+        }
+
+        // Animate section headers
+        ScrollTrigger.create({
+            trigger: section,
+            start: "top 60%",
+            onEnter: () => {
+                section.querySelector('.section-header')?.classList.add('visible');
+            },
+            once: true
+        });
+    });
+}
+
+// ============================================
+// Preloader
 // ============================================
 function initPreloader() {
     const preloader = document.querySelector('.preloader');
@@ -138,16 +367,12 @@ function initPreloader() {
         if (progressBar) progressBar.style.width = progress + '%';
     };
 
-    // Simulate initial progress
     updateProgress(10);
 
     return new Promise((resolve) => {
-        // Wait for fonts
         if (document.fonts && document.fonts.ready) {
             document.fonts.ready.then(() => {
                 updateProgress(50);
-
-                // Wait a bit for first images to start loading
                 setTimeout(() => {
                     updateProgress(80);
                     setTimeout(() => {
@@ -160,7 +385,6 @@ function initPreloader() {
                 }, 500);
             });
         } else {
-            // Fallback for browsers without font loading API
             setTimeout(() => {
                 updateProgress(100);
                 preloader.classList.add('hidden');
@@ -171,70 +395,19 @@ function initPreloader() {
 }
 
 // ============================================
-// Mobile Detection and Swipe Hint
-// ============================================
-function initMobileHint() {
-    const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-
-    if (isTouchDevice) {
-        const hint = document.createElement('div');
-        hint.className = 'swipe-hint';
-        document.body.appendChild(hint);
-
-        // Show hint when entering first gallery section
-        ScrollTrigger.create({
-            trigger: ".gallery-section",
-            start: "top 90%",
-            onEnter: () => {
-                hint.classList.add('visible');
-                setTimeout(() => {
-                    hint.classList.remove('visible');
-                }, 3000);
-            },
-            once: true
-        });
-    }
-}
-
-// ============================================
 // Hero Animations
 // ============================================
 function initHeroAnimations() {
     const heroTl = gsap.timeline({ defaults: { ease: "power3.out" } });
 
     heroTl
-        .to(".hero-glow", {
-            opacity: 1,
-            scale: 1.1,
-            duration: 2,
-            ease: "power2.out"
-        })
-        .to(".title-line:first-child", {
-            opacity: 1,
-            y: 0,
-            duration: 1.2
-        }, "-=1.5")
-        .to(".title-divider", {
-            opacity: 1,
-            scaleX: 1,
-            duration: 0.8
-        }, "-=0.8")
-        .to(".title-line.subtitle", {
-            opacity: 1,
-            y: 0,
-            duration: 1
-        }, "-=0.5")
-        .to(".hero-tagline", {
-            opacity: 1,
-            y: 0,
-            duration: 0.8
-        }, "-=0.3")
-        .to(".scroll-indicator", {
-            opacity: 1,
-            duration: 1
-        }, "-=0.2");
+        .to(".hero-glow", { opacity: 1, scale: 1.1, duration: 2, ease: "power2.out" })
+        .to(".title-line:first-child", { opacity: 1, y: 0, duration: 1.2 }, "-=1.5")
+        .to(".title-divider", { opacity: 1, scaleX: 1, duration: 0.8 }, "-=0.8")
+        .to(".title-line.subtitle", { opacity: 1, y: 0, duration: 1 }, "-=0.5")
+        .to(".hero-tagline", { opacity: 1, y: 0, duration: 0.8 }, "-=0.3")
+        .to(".scroll-indicator", { opacity: 1, duration: 1 }, "-=0.2");
 
-    // Parallax on hero glow
     gsap.to(".hero-glow", {
         y: -100,
         ease: "none",
@@ -248,7 +421,7 @@ function initHeroAnimations() {
 }
 
 // ============================================
-// Progress Bar Animation
+// Progress Bar
 // ============================================
 function initProgressBar() {
     gsap.to(".progress-bar", {
@@ -264,208 +437,19 @@ function initProgressBar() {
 }
 
 // ============================================
-// Horizontal Scroll Sections
-// ============================================
-function initHorizontalScroll() {
-    const gallerySections = gsap.utils.toArray(".gallery-section");
-
-    gallerySections.forEach((section, index) => {
-        const filmstrip = section.querySelector(".filmstrip");
-        const photos = section.querySelectorAll(".photo-container");
-        const sectionNumber = section.querySelector(".section-number");
-        const sectionTitle = section.querySelector(".section-title");
-
-        if (!filmstrip || photos.length === 0) return;
-
-        // Calculate scroll distance based on filmstrip width
-        const getScrollWidth = () => {
-            return filmstrip.scrollWidth - window.innerWidth + window.innerWidth * 0.3;
-        };
-
-        // Create horizontal scroll animation
-        const scrollTween = gsap.to(filmstrip, {
-            x: () => -getScrollWidth(),
-            ease: "none",
-            scrollTrigger: {
-                trigger: section,
-                start: "top top",
-                end: () => `+=${getScrollWidth()}`,
-                pin: true,
-                scrub: 1,
-                anticipatePin: 1,
-                invalidateOnRefresh: true,
-                onEnter: () => animateSectionIn(section),
-                onLeaveBack: () => animateSectionOut(section),
-                onUpdate: (self) => {
-                    // Reveal photos as they come into view
-                    const progress = self.progress;
-                    const viewportWidth = window.innerWidth;
-                    const filmstripX = gsap.getProperty(filmstrip, "x");
-
-                    photos.forEach((photo, i) => {
-                        const photoRect = photo.getBoundingClientRect();
-                        const photoCenter = photoRect.left + photoRect.width / 2;
-
-                        // Check if photo is in viewport
-                        if (photoCenter > -100 && photoCenter < viewportWidth + 100) {
-                            if (!photo.classList.contains('visible')) {
-                                photo.classList.add('visible');
-                            }
-                        }
-                    });
-                }
-            }
-        });
-
-        // Different parallax effects based on size class
-        photos.forEach((photo, i) => {
-            const img = photo.querySelector("img");
-            if (!img) return;
-
-            // Varied parallax based on position and size
-            let parallaxAmount;
-            if (photo.classList.contains('featured')) {
-                parallaxAmount = 20; // Subtle for large
-            } else if (photo.classList.contains('size-large')) {
-                parallaxAmount = (i % 2 === 0) ? 30 : -25;
-            } else if (photo.classList.contains('size-small')) {
-                parallaxAmount = (i % 2 === 0) ? 50 : -45; // More movement for small
-            } else {
-                parallaxAmount = (i % 3 === 0) ? 40 : (i % 3 === 1) ? -30 : 25;
-            }
-
-            gsap.to(img, {
-                y: parallaxAmount,
-                ease: "none",
-                scrollTrigger: {
-                    trigger: section,
-                    start: "top top",
-                    end: () => `+=${getScrollWidth()}`,
-                    scrub: 1.5,
-                    invalidateOnRefresh: true
-                }
-            });
-
-            // Scale effect for featured images
-            if (photo.classList.contains('featured')) {
-                gsap.fromTo(img,
-                    { scale: 1.1 },
-                    {
-                        scale: 1,
-                        ease: "none",
-                        scrollTrigger: {
-                            trigger: section,
-                            start: "top top",
-                            end: () => `+=${getScrollWidth() * 0.3}`,
-                            scrub: 1,
-                            invalidateOnRefresh: true
-                        }
-                    }
-                );
-            }
-        });
-    });
-}
-
-// ============================================
-// Section Title Animations
-// ============================================
-function animateSectionIn(section) {
-    const sectionNumber = section.querySelector(".section-number");
-    const sectionTitle = section.querySelector(".section-title");
-
-    if (sectionNumber) {
-        gsap.to(sectionNumber, {
-            opacity: 1,
-            x: 0,
-            duration: 0.6,
-            ease: "power2.out"
-        });
-    }
-
-    if (sectionTitle) {
-        gsap.to(sectionTitle, {
-            opacity: 1,
-            x: 0,
-            duration: 0.8,
-            delay: 0.1,
-            ease: "power2.out"
-        });
-
-        // Animate the pseudo-element line via CSS variable or direct manipulation
-        gsap.to(sectionTitle, {
-            "--line-width": "100px",
-            duration: 0.8,
-            delay: 0.2,
-            ease: "power2.out"
-        });
-    }
-}
-
-function animateSectionOut(section) {
-    const sectionNumber = section.querySelector(".section-number");
-    const sectionTitle = section.querySelector(".section-title");
-
-    gsap.to([sectionNumber, sectionTitle], {
-        opacity: 0,
-        x: -20,
-        duration: 0.4,
-        ease: "power2.in"
-    });
-}
-
-// ============================================
-// Initialize All Animations
-// ============================================
-function initAnimations() {
-    gsap.registerPlugin(ScrollTrigger);
-
-    // Initialize all animation modules
-    initHeroAnimations();
-    initProgressBar();
-    initHorizontalScroll();
-
-    // Trigger first section animation when scrolled into view
-    ScrollTrigger.create({
-        trigger: ".gallery-section",
-        start: "top 80%",
-        onEnter: () => {
-            const firstSection = document.querySelector(".gallery-section");
-            if (firstSection) {
-                animateSectionIn(firstSection);
-            }
-        },
-        once: true
-    });
-
-    // Refresh ScrollTrigger on window resize
-    let resizeTimeout;
-    window.addEventListener("resize", () => {
-        clearTimeout(resizeTimeout);
-        resizeTimeout = setTimeout(() => {
-            ScrollTrigger.refresh();
-        }, 250);
-    });
-}
-
-// ============================================
-// Initialize on DOM Ready
+// Initialize Everything
 // ============================================
 document.addEventListener('DOMContentLoaded', () => {
-    initGallery();
+    gsap.registerPlugin(ScrollTrigger);
 
-    // Wait for preloader, then init animations
     initPreloader().then(() => {
-        requestAnimationFrame(() => {
-            initAnimations();
-            initMobileHint();
-        });
+        initHeroAnimations();
+        initProgressBar();
+        initGalleries();
     });
 });
 
-// ============================================
-// Handle page visibility for performance
-// ============================================
+// Handle page visibility
 document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
         ScrollTrigger.getAll().forEach(st => st.disable());

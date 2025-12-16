@@ -1,6 +1,6 @@
 /* ============================================
-   GIULIA / Alfa Romeo - Horizontal Filmstrip Gallery
-   GSAP + ScrollTrigger Version
+   GIULIA / Alfa Romeo - Creative Scroll Gallery
+   Vertical + Stacking + Reveal Effects
    ============================================ */
 
 /* Reset & Base */
@@ -37,7 +37,66 @@ body {
 }
 
 /* ============================================
-   Film Grain Overlay
+   Preloader
+   ============================================ */
+.preloader {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: #0a0a0a;
+    z-index: 9999;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: opacity 0.8s ease, visibility 0.8s ease;
+}
+
+.preloader.hidden {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+}
+
+.preloader-content {
+    text-align: center;
+}
+
+.preloader-logo {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(2rem, 8vw, 4rem);
+    font-weight: 300;
+    letter-spacing: 0.1em;
+    color: #fff;
+    margin-bottom: 2rem;
+}
+
+.preloader-bar {
+    width: 200px;
+    height: 2px;
+    background: #222;
+    margin: 0 auto 1rem;
+    overflow: hidden;
+}
+
+.preloader-progress {
+    width: 0%;
+    height: 100%;
+    background: linear-gradient(90deg, #8b0000, #cc0000);
+    transition: width 0.3s ease;
+}
+
+.preloader-text {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.7rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: #444;
+}
+
+/* ============================================
+   Film Grain & Vignette
    ============================================ */
 .film-grain {
     position: fixed;
@@ -51,9 +110,6 @@ body {
     background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
 }
 
-/* ============================================
-   Vignette Overlay
-   ============================================ */
 .vignette {
     position: fixed;
     top: 0;
@@ -76,6 +132,21 @@ body {
     align-items: center;
     position: relative;
     overflow: hidden;
+    background: radial-gradient(ellipse at 50% 30%, rgba(139, 0, 0, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 80%, rgba(139, 0, 0, 0.05) 0%, transparent 40%),
+                #0a0a0a;
+}
+
+.hero::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.015'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    opacity: 0.5;
+    pointer-events: none;
 }
 
 .hero-glow {
@@ -167,31 +238,27 @@ body {
 }
 
 @keyframes scrollPulse {
-    0%, 100% {
-        opacity: 0.4;
-        transform: scaleY(1);
-    }
-    50% {
-        opacity: 1;
-        transform: scaleY(1.3);
-    }
+    0%, 100% { opacity: 0.4; transform: scaleY(1); }
+    50% { opacity: 1; transform: scaleY(1.3); }
 }
 
 /* ============================================
-   Gallery Sections (Pinned Horizontal Scroll)
+   Gallery Sections - Base
    ============================================ */
 .gallery-section {
     position: relative;
-    overflow: hidden;
+    min-height: 100vh;
+    padding: 10vh 0;
 }
 
 .section-header {
-    position: absolute;
-    top: 50%;
+    position: sticky;
+    top: 15vh;
     left: 5vw;
-    transform: translateY(-50%);
     z-index: 10;
     pointer-events: none;
+    padding: 0 5vw;
+    margin-bottom: 5vh;
 }
 
 .section-number {
@@ -211,7 +278,6 @@ body {
     font-weight: 300;
     letter-spacing: 0.1em;
     color: #fff;
-    text-shadow: 0 0 60px rgba(0, 0, 0, 0.8);
     opacity: 0;
     transform: translateX(-30px);
 }
@@ -223,146 +289,270 @@ body {
     height: 1px;
     background: linear-gradient(to right, #8b0000, transparent);
     margin-top: 1rem;
+    transition: width 0.8s ease;
 }
 
-/* Filmstrip Container */
-.filmstrip-container {
+.section-header.visible .section-number,
+.section-header.visible .section-title {
+    opacity: 1;
+    transform: translateX(0);
+    transition: all 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.section-header.visible .section-title::after {
+    width: 100px;
+}
+
+/* ============================================
+   Style 1: Stacking Cards
+   ============================================ */
+.gallery-section[data-style="stack"] {
+    min-height: 300vh;
+}
+
+.gallery-section[data-style="stack"] .gallery-container {
+    position: sticky;
+    top: 0;
     height: 100vh;
     display: flex;
+    justify-content: center;
     align-items: center;
+    perspective: 1000px;
+}
+
+.gallery-section[data-style="stack"] .photo-container {
+    position: absolute;
+    width: clamp(300px, 50vw, 600px);
+    height: clamp(400px, 70vh, 700px);
+    border-radius: 8px;
     overflow: hidden;
+    transform-origin: center center;
+    transition: transform 0.1s ease-out;
 }
 
-.filmstrip {
-    display: flex;
-    align-items: center;
-    gap: 3vw;
-    padding: 0 15vw 0 28vw;
-    will-change: transform;
-    min-height: 100vh;
+.gallery-section[data-style="stack"] .photo-container img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
 }
 
-/* Photo Containers - Varied Sizes */
-.photo-container {
-    flex-shrink: 0;
+/* ============================================
+   Style 2: Masonry Grid with Reveals
+   ============================================ */
+.gallery-section[data-style="masonry"] .gallery-container {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2vw;
+    padding: 0 5vw;
+    max-width: 1600px;
+    margin: 0 auto;
+}
+
+.gallery-section[data-style="masonry"] .photo-container {
     position: relative;
     overflow: hidden;
     border-radius: 4px;
-    background: #111;
     opacity: 0;
-    transform: translateY(60px);
-    transition: opacity 0.8s ease, transform 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    transform: translateY(100px) scale(0.9);
+    transition: all 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
-.photo-container.visible {
+.gallery-section[data-style="masonry"] .photo-container.visible {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
 }
 
-/* Size variations */
-.photo-container.size-large {
-    width: clamp(400px, 45vw, 600px);
-    height: clamp(300px, 70vh, 85vh);
-    align-self: center;
+.gallery-section[data-style="masonry"] .photo-container:nth-child(3n+1) {
+    grid-column: span 1;
+    aspect-ratio: 3/4;
 }
 
-.photo-container.size-medium {
-    width: clamp(300px, 32vw, 450px);
-    height: clamp(220px, 50vh, 65vh);
+.gallery-section[data-style="masonry"] .photo-container:nth-child(3n+2) {
+    grid-column: span 2;
+    aspect-ratio: 16/9;
 }
 
-.photo-container.size-small {
-    width: clamp(200px, 22vw, 320px);
-    height: clamp(150px, 35vh, 45vh);
+.gallery-section[data-style="masonry"] .photo-container:nth-child(3n+3) {
+    grid-column: span 1;
+    aspect-ratio: 1/1;
 }
 
-/* Vertical offset variations */
-.photo-container.offset-up {
-    align-self: flex-start;
-    margin-top: 5vh;
+.gallery-section[data-style="masonry"] .photo-container img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.6s ease;
 }
 
-.photo-container.offset-down {
-    align-self: flex-end;
-    margin-bottom: 5vh;
+.gallery-section[data-style="masonry"] .photo-container:hover img {
+    transform: scale(1.05);
 }
 
-.photo-container.offset-center {
-    align-self: center;
+/* ============================================
+   Style 3: Cinematic Wipe Reveal
+   ============================================ */
+.gallery-section[data-style="wipe"] {
+    min-height: 400vh;
 }
 
-/* Rotation on scroll */
-.photo-container.tilt-left {
-    transform: translateY(60px) rotate(-2deg);
+.gallery-section[data-style="wipe"] .gallery-container {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow: hidden;
 }
 
-.photo-container.tilt-left.visible {
-    transform: translateY(0) rotate(-1deg);
-}
-
-.photo-container.tilt-right {
-    transform: translateY(60px) rotate(2deg);
-}
-
-.photo-container.tilt-right.visible {
-    transform: translateY(0) rotate(1deg);
-}
-
-/* Overlap effect */
-.photo-container.overlap {
-    margin-left: -5vw;
-    z-index: 2;
-}
-
-/* Featured/hero image in section */
-.photo-container.featured {
-    width: clamp(500px, 55vw, 750px);
-    height: clamp(350px, 80vh, 90vh);
-    z-index: 3;
-}
-
-.photo-container::before {
-    content: '';
+.gallery-section[data-style="wipe"] .photo-container {
     position: absolute;
-    inset: 0;
-    background: linear-gradient(135deg, rgba(139, 0, 0, 0.15) 0%, transparent 50%);
-    z-index: 2;
-    pointer-events: none;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    clip-path: inset(0 100% 0 0);
+    transition: clip-path 0.1s ease-out;
+}
+
+.gallery-section[data-style="wipe"] .photo-container img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.gallery-section[data-style="wipe"] .photo-counter {
+    position: absolute;
+    bottom: 5vh;
+    right: 5vw;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.5rem;
+    color: #fff;
+    z-index: 10;
+}
+
+/* ============================================
+   Style 4: Scattered/Editorial
+   ============================================ */
+.gallery-section[data-style="scatter"] .gallery-container {
+    position: relative;
+    padding: 10vh 0;
+}
+
+.gallery-section[data-style="scatter"] .photo-container {
+    position: relative;
+    margin: 5vh auto;
+    opacity: 0;
+    transition: all 1s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.gallery-section[data-style="scatter"] .photo-container.visible {
+    opacity: 1;
+}
+
+.gallery-section[data-style="scatter"] .photo-container:nth-child(odd) {
+    width: clamp(300px, 45vw, 550px);
+    margin-left: 10vw;
+    transform: translateX(-100px) rotate(-3deg);
+}
+
+.gallery-section[data-style="scatter"] .photo-container:nth-child(odd).visible {
+    transform: translateX(0) rotate(-1deg);
+}
+
+.gallery-section[data-style="scatter"] .photo-container:nth-child(even) {
+    width: clamp(350px, 55vw, 650px);
+    margin-right: 10vw;
+    margin-left: auto;
+    transform: translateX(100px) rotate(3deg);
+}
+
+.gallery-section[data-style="scatter"] .photo-container:nth-child(even).visible {
+    transform: translateX(0) rotate(1deg);
+}
+
+.gallery-section[data-style="scatter"] .photo-container:nth-child(3n) {
+    width: clamp(400px, 70vw, 800px);
+    margin: 10vh auto;
+    transform: translateY(50px) scale(0.95);
+}
+
+.gallery-section[data-style="scatter"] .photo-container:nth-child(3n).visible {
+    transform: translateY(0) scale(1);
+}
+
+.gallery-section[data-style="scatter"] .photo-container img {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: 4px;
+}
+
+/* ============================================
+   Style 5: Zoom Parallax
+   ============================================ */
+.gallery-section[data-style="zoom"] {
+    min-height: 500vh;
+}
+
+.gallery-section[data-style="zoom"] .gallery-container {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+}
+
+.gallery-section[data-style="zoom"] .photo-container {
+    position: absolute;
+    border-radius: 8px;
+    overflow: hidden;
     opacity: 0;
     transition: opacity 0.5s ease;
 }
 
-.photo-container::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    border: 1px solid rgba(139, 0, 0, 0);
-    border-radius: 4px;
-    z-index: 3;
-    pointer-events: none;
-    transition: border-color 0.5s ease;
-}
-
-.photo-container:hover::before {
+.gallery-section[data-style="zoom"] .photo-container.active {
     opacity: 1;
 }
 
-.photo-container:hover::after {
-    border-color: rgba(139, 0, 0, 0.3);
-}
-
-.photo-container img {
+.gallery-section[data-style="zoom"] .photo-container img {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    filter: brightness(0.85) contrast(1.05) saturate(0.95);
-    transition: filter 0.6s ease, transform 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-    will-change: transform;
+}
+
+/* ============================================
+   Photo Container Base Styles
+   ============================================ */
+.photo-container {
+    background: #111;
+}
+
+.photo-container img {
+    filter: brightness(0.9) contrast(1.05) saturate(0.95);
+    transition: filter 0.6s ease;
 }
 
 .photo-container:hover img {
     filter: brightness(1) contrast(1.1) saturate(1);
-    transform: scale(1.05);
+}
+
+.photo-container img.error {
+    opacity: 0.3;
+    filter: grayscale(1);
+}
+
+.photo-container.loading::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.03), transparent);
+    animation: shimmer 1.5s infinite;
+    z-index: 1;
+}
+
+@keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
 }
 
 /* ============================================
@@ -398,233 +588,6 @@ body {
     letter-spacing: 0.15em;
 }
 
-/* ============================================
-   Responsive Design
-   ============================================ */
-@media (max-width: 1024px) {
-    .filmstrip {
-        padding: 0 10vw 0 25vw;
-        gap: 3vw;
-    }
-
-    .photo-container {
-        width: clamp(260px, 45vw, 400px);
-        height: 50vh;
-    }
-}
-
-@media (max-width: 768px) {
-    .filmstrip {
-        padding: 0 8vw 0 22vw;
-        gap: 4vw;
-    }
-
-    .photo-container {
-        width: 70vw;
-        height: 45vh;
-    }
-
-    .section-header {
-        left: 3vw;
-    }
-
-    .section-title {
-        font-size: 1.5rem;
-    }
-
-    .section-number {
-        font-size: 0.6rem;
-    }
-
-    .hero-title {
-        font-size: clamp(2.5rem, 15vw, 5rem);
-    }
-
-    .title-line.subtitle {
-        font-size: 0.4em;
-    }
-}
-
-@media (max-width: 480px) {
-    .filmstrip {
-        padding: 0 5vw 0 18vw;
-        gap: 5vw;
-    }
-
-    .photo-container {
-        width: 80vw;
-        height: 40vh;
-    }
-
-    .section-header {
-        left: 2vw;
-        top: 15%;
-        transform: none;
-    }
-}
-
-/* ============================================
-   Loading State
-   ============================================ */
-.photo-container img[data-loading="true"] {
-    opacity: 0;
-    transition: opacity 0.5s ease;
-}
-
-.photo-container img[data-loading="false"] {
-    opacity: 1;
-}
-
-/* ============================================
-   Preloader
-   ============================================ */
-.preloader {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: #0a0a0a;
-    z-index: 9999;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    transition: opacity 0.6s ease, visibility 0.6s ease;
-}
-
-.preloader.hidden {
-    opacity: 0;
-    visibility: hidden;
-    pointer-events: none;
-}
-
-.preloader-content {
-    text-align: center;
-}
-
-.preloader-logo {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: clamp(2rem, 8vw, 4rem);
-    font-weight: 300;
-    letter-spacing: 0.1em;
-    color: #fff;
-    margin-bottom: 2rem;
-}
-
-.preloader-bar {
-    width: 200px;
-    height: 2px;
-    background: #222;
-    margin: 0 auto 1rem;
-    overflow: hidden;
-}
-
-.preloader-progress {
-    width: 0%;
-    height: 100%;
-    background: linear-gradient(90deg, #8b0000, #cc0000);
-    transition: width 0.3s ease;
-}
-
-.preloader-text {
-    font-family: 'Inter', sans-serif;
-    font-size: 0.7rem;
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-    color: #444;
-}
-
-/* ============================================
-   Image Loading Skeleton
-   ============================================ */
-.photo-container {
-    background: linear-gradient(135deg, #111 0%, #1a1a1a 100%);
-}
-
-.photo-container.loading::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.03), transparent);
-    animation: shimmer 1.5s infinite;
-    z-index: 1;
-}
-
-@keyframes shimmer {
-    0% { transform: translateX(-100%); }
-    100% { transform: translateX(100%); }
-}
-
-/* Image error state */
-.photo-container img.error {
-    opacity: 0.3;
-    filter: grayscale(1);
-}
-
-/* ============================================
-   Mobile Touch Optimization
-   ============================================ */
-@media (pointer: coarse) {
-    .filmstrip-container {
-        touch-action: pan-x pan-y;
-        -webkit-overflow-scrolling: touch;
-    }
-
-    .photo-container {
-        -webkit-tap-highlight-color: transparent;
-    }
-
-    .photo-container:active {
-        transform: scale(0.98);
-        transition: transform 0.1s ease;
-    }
-}
-
-/* Swipe hint for mobile */
-.swipe-hint {
-    position: fixed;
-    bottom: 20%;
-    left: 50%;
-    transform: translateX(-50%);
-    font-family: 'Inter', sans-serif;
-    font-size: 0.65rem;
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-    color: #444;
-    opacity: 0;
-    transition: opacity 0.5s ease;
-    pointer-events: none;
-    z-index: 100;
-}
-
-.swipe-hint.visible {
-    opacity: 1;
-}
-
-/* ============================================
-   Hero Visual Enhancement
-   ============================================ */
-.hero {
-    background: radial-gradient(ellipse at 50% 30%, rgba(139, 0, 0, 0.08) 0%, transparent 50%),
-                radial-gradient(ellipse at 80% 80%, rgba(139, 0, 0, 0.05) 0%, transparent 40%),
-                #0a0a0a;
-}
-
-.hero::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.015'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
-    opacity: 0.5;
-    pointer-events: none;
-}
-
-/* ============================================
-   Footer Enhancement
-   ============================================ */
 .footer-sub {
     font-family: 'Inter', sans-serif;
     font-size: 0.7rem;
@@ -640,4 +603,45 @@ body {
     letter-spacing: 0.1em;
     color: #333;
     margin-top: 2rem;
+}
+
+/* ============================================
+   Responsive
+   ============================================ */
+@media (max-width: 768px) {
+    .gallery-section[data-style="masonry"] .gallery-container {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .gallery-section[data-style="masonry"] .photo-container:nth-child(3n+2) {
+        grid-column: span 2;
+    }
+
+    .gallery-section[data-style="scatter"] .photo-container:nth-child(odd),
+    .gallery-section[data-style="scatter"] .photo-container:nth-child(even) {
+        width: 85vw;
+        margin: 5vh auto;
+    }
+
+    .hero-title {
+        font-size: clamp(2.5rem, 15vw, 5rem);
+    }
+
+    .section-header {
+        position: relative;
+        top: 0;
+    }
+}
+
+@media (max-width: 480px) {
+    .gallery-section[data-style="masonry"] .gallery-container {
+        grid-template-columns: 1fr;
+    }
+
+    .gallery-section[data-style="masonry"] .photo-container:nth-child(3n+1),
+    .gallery-section[data-style="masonry"] .photo-container:nth-child(3n+2),
+    .gallery-section[data-style="masonry"] .photo-container:nth-child(3n+3) {
+        grid-column: span 1;
+        aspect-ratio: 4/3;
+    }
 }
