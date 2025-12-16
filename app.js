@@ -58,20 +58,45 @@ const sessions = [
 ];
 
 // ============================================
+// Layout Patterns for Visual Variety
+// ============================================
+const layoutPatterns = [
+    // Pattern 1: Hero + small cluster
+    ['featured offset-center', 'size-small offset-up', 'size-small offset-down overlap', 'size-medium offset-center', 'size-large offset-up tilt-right'],
+    // Pattern 2: Staggered medium
+    ['size-medium offset-up', 'size-large offset-down', 'size-small offset-up overlap', 'size-medium offset-center tilt-left', 'size-medium offset-down'],
+    // Pattern 3: Large focus
+    ['size-small offset-down', 'featured offset-center', 'size-small offset-up overlap', 'size-medium offset-down tilt-right', 'size-large offset-center'],
+    // Pattern 4: Rhythmic
+    ['size-medium offset-up tilt-left', 'size-small offset-down', 'size-large offset-center', 'size-small offset-up overlap', 'size-medium offset-down tilt-right'],
+    // Pattern 5: Cascade
+    ['size-large offset-up', 'size-medium offset-center overlap', 'size-small offset-down', 'featured offset-center', 'size-medium offset-up tilt-left']
+];
+
+// ============================================
 // Initialize Gallery - Create Images Dynamically
 // ============================================
 function initGallery() {
-    sessions.forEach(session => {
+    sessions.forEach((session, sessionIndex) => {
         const section = document.querySelector(`[data-session="${session.name}"]`);
         if (!section) return;
 
         const filmstrip = section.querySelector('.filmstrip');
         if (!filmstrip) return;
 
-        // Create image elements
-        session.images.forEach(imageName => {
+        // Get pattern for this session
+        const pattern = layoutPatterns[sessionIndex % layoutPatterns.length];
+
+        // Create image elements with varied layouts
+        session.images.forEach((imageName, imageIndex) => {
             const photoContainer = document.createElement('div');
-            photoContainer.className = 'photo-container loading';
+
+            // Apply layout class from pattern (cycle through pattern)
+            const layoutClass = pattern[imageIndex % pattern.length];
+            photoContainer.className = `photo-container loading ${layoutClass}`;
+
+            // Add stagger delay for animation
+            photoContainer.style.transitionDelay = `${(imageIndex % 5) * 0.1}s`;
 
             const img = document.createElement('img');
             img.src = `public/${imageName}.jpeg`;
@@ -270,17 +295,44 @@ function initHorizontalScroll() {
                 anticipatePin: 1,
                 invalidateOnRefresh: true,
                 onEnter: () => animateSectionIn(section),
-                onLeaveBack: () => animateSectionOut(section)
+                onLeaveBack: () => animateSectionOut(section),
+                onUpdate: (self) => {
+                    // Reveal photos as they come into view
+                    const progress = self.progress;
+                    const viewportWidth = window.innerWidth;
+                    const filmstripX = gsap.getProperty(filmstrip, "x");
+
+                    photos.forEach((photo, i) => {
+                        const photoRect = photo.getBoundingClientRect();
+                        const photoCenter = photoRect.left + photoRect.width / 2;
+
+                        // Check if photo is in viewport
+                        if (photoCenter > -100 && photoCenter < viewportWidth + 100) {
+                            if (!photo.classList.contains('visible')) {
+                                photo.classList.add('visible');
+                            }
+                        }
+                    });
+                }
             }
         });
 
-        // Parallax effect on individual photos
+        // Different parallax effects based on size class
         photos.forEach((photo, i) => {
             const img = photo.querySelector("img");
             if (!img) return;
 
-            // Alternate parallax direction
-            const parallaxAmount = (i % 3 === 0) ? 40 : (i % 3 === 1) ? -30 : 20;
+            // Varied parallax based on position and size
+            let parallaxAmount;
+            if (photo.classList.contains('featured')) {
+                parallaxAmount = 20; // Subtle for large
+            } else if (photo.classList.contains('size-large')) {
+                parallaxAmount = (i % 2 === 0) ? 30 : -25;
+            } else if (photo.classList.contains('size-small')) {
+                parallaxAmount = (i % 2 === 0) ? 50 : -45; // More movement for small
+            } else {
+                parallaxAmount = (i % 3 === 0) ? 40 : (i % 3 === 1) ? -30 : 25;
+            }
 
             gsap.to(img, {
                 y: parallaxAmount,
@@ -293,6 +345,24 @@ function initHorizontalScroll() {
                     invalidateOnRefresh: true
                 }
             });
+
+            // Scale effect for featured images
+            if (photo.classList.contains('featured')) {
+                gsap.fromTo(img,
+                    { scale: 1.1 },
+                    {
+                        scale: 1,
+                        ease: "none",
+                        scrollTrigger: {
+                            trigger: section,
+                            start: "top top",
+                            end: () => `+=${getScrollWidth() * 0.3}`,
+                            scrub: 1,
+                            invalidateOnRefresh: true
+                        }
+                    }
+                );
+            }
         });
     });
 }

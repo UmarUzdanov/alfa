@@ -235,20 +235,90 @@ body {
 
 .filmstrip {
     display: flex;
-    gap: 2vw;
+    align-items: center;
+    gap: 3vw;
     padding: 0 15vw 0 28vw;
     will-change: transform;
+    min-height: 100vh;
 }
 
-/* Photo Containers */
+/* Photo Containers - Varied Sizes */
 .photo-container {
     flex-shrink: 0;
-    width: clamp(280px, 32vw, 480px);
-    height: clamp(200px, 55vh, 75vh);
     position: relative;
     overflow: hidden;
     border-radius: 4px;
     background: #111;
+    opacity: 0;
+    transform: translateY(60px);
+    transition: opacity 0.8s ease, transform 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.photo-container.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Size variations */
+.photo-container.size-large {
+    width: clamp(400px, 45vw, 600px);
+    height: clamp(300px, 70vh, 85vh);
+    align-self: center;
+}
+
+.photo-container.size-medium {
+    width: clamp(300px, 32vw, 450px);
+    height: clamp(220px, 50vh, 65vh);
+}
+
+.photo-container.size-small {
+    width: clamp(200px, 22vw, 320px);
+    height: clamp(150px, 35vh, 45vh);
+}
+
+/* Vertical offset variations */
+.photo-container.offset-up {
+    align-self: flex-start;
+    margin-top: 5vh;
+}
+
+.photo-container.offset-down {
+    align-self: flex-end;
+    margin-bottom: 5vh;
+}
+
+.photo-container.offset-center {
+    align-self: center;
+}
+
+/* Rotation on scroll */
+.photo-container.tilt-left {
+    transform: translateY(60px) rotate(-2deg);
+}
+
+.photo-container.tilt-left.visible {
+    transform: translateY(0) rotate(-1deg);
+}
+
+.photo-container.tilt-right {
+    transform: translateY(60px) rotate(2deg);
+}
+
+.photo-container.tilt-right.visible {
+    transform: translateY(0) rotate(1deg);
+}
+
+/* Overlap effect */
+.photo-container.overlap {
+    margin-left: -5vw;
+    z-index: 2;
+}
+
+/* Featured/hero image in section */
+.photo-container.featured {
+    width: clamp(500px, 55vw, 750px);
+    height: clamp(350px, 80vh, 90vh);
+    z-index: 3;
 }
 
 .photo-container::before {
